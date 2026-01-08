@@ -45,6 +45,22 @@ function parseConceptName(filename: string): { number: number; name: string; slu
   return { number, name, slug };
 }
 
+async function extractModelPathFromTest(testPath: string, projectPath: string): Promise<string | null> {
+  // Parse test file to find import from ../src/*
+  try {
+    const content = await Bun.file(testPath).text();
+    // Match: from "../src/filename" or from '../src/filename'
+    const importMatch = content.match(/from\s+["']\.\.\/src\/([^"']+)["']/);
+    if (importMatch) {
+      const modelName = importMatch[1];
+      return join(projectPath, "src", `${modelName}.ts`);
+    }
+  } catch {
+    // Ignore errors
+  }
+  return null;
+}
+
 async function discoverConcepts(projectPath: string): Promise<Concept[]> {
   const concepts: Concept[] = [];
   const glob = new Glob("**/[0-9][0-9][0-9]-*.test.ts");
@@ -55,9 +71,11 @@ async function discoverConcepts(projectPath: string): Promise<Concept[]> {
     const filename = basename(testFile);
     const { number, name, slug } = parseConceptName(filename);
     const id = filename.replace(".test.ts", "");
+    const testPath = join(testsDir, testFile);
 
-    // Model files use just the slug (e.g., "recurrent-patterns.ts")
-    const modelPath = join(projectPath, "src", `${slug}.ts`);
+    // Extract model path from test file imports, fallback to slug-based path
+    const modelPath = await extractModelPathFromTest(testPath, projectPath)
+      ?? join(projectPath, "src", `${slug}.ts`);
     // Reasoning files use the full id with number prefix
     const reasoningPath = join(projectPath, "docs", "reasoning", `${id}.md`);
 
@@ -65,7 +83,7 @@ async function discoverConcepts(projectPath: string): Promise<Concept[]> {
       id,
       number,
       name,
-      testPath: join(testsDir, testFile),
+      testPath,
       modelPath,
       reasoningPath,
       status: "pending" as ConceptStatus,
