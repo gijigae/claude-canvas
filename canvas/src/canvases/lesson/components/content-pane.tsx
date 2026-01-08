@@ -1,8 +1,14 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 import SyntaxHighlight from "ink-syntax-highlight";
+import { marked } from "marked";
+// @ts-ignore - types don't match latest version
+import { markedTerminal } from "marked-terminal";
 import { LESSON_COLORS } from "../types";
-import { SimpleMarkdown } from "./simple-markdown";
+
+// Configure marked with terminal renderer once
+// @ts-ignore - types package is outdated
+marked.use(markedTerminal());
 
 export type PaneType = "test" | "model" | "reasoning";
 
@@ -40,19 +46,27 @@ export function ContentPane({
   const canScrollUp = scrollOffset > 0;
   const canScrollDown = scrollOffset + visibleLines < lines.length;
 
+  // Render markdown content with marked-terminal
+  const renderedMarkdown = useMemo(() => {
+    if (type !== "reasoning") return null;
+    return marked.parse(content) as string;
+  }, [content, type]);
+
   // Render content based on pane type
   const renderContent = () => {
-    if (type === "reasoning") {
+    if (type === "reasoning" && renderedMarkdown) {
+      // Split rendered markdown into lines and show visible portion
+      const mdLines = renderedMarkdown.split("\n");
+      const visibleMdLines = mdLines.slice(scrollOffset, scrollOffset + visibleLines);
       return (
-        <SimpleMarkdown
-          content={content}
-          scrollOffset={scrollOffset}
-          visibleLines={visibleLines}
-        />
+        <Box flexDirection="column">
+          {visibleMdLines.map((line, i) => (
+            <Text key={i}>{line || " "}</Text>
+          ))}
+        </Box>
       );
     }
     // TEST and MODEL use TypeScript highlighting
-    // Slice content to visible lines for scrolling
     const visibleContent = lines
       .slice(scrollOffset, scrollOffset + visibleLines)
       .join("\n");
