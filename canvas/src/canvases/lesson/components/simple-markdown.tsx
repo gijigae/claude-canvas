@@ -65,19 +65,25 @@ function parseLine(line: string): ParsedLine {
     return { type: "code", content: trimmed.slice(3) };
   }
 
-  // Table row (starts and ends with |)
-  if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
-    // Check if it's a separator row (|---|---|)
-    if (/^\|[\s\-:]+\|$/.test(trimmed.replace(/\|/g, "|"))) {
-      const cellCount = (trimmed.match(/\|/g) || []).length - 1;
-      return { type: "tableSeparator", content: trimmed, cells: Array(cellCount).fill("---") };
+  // Table row (contains | and has multiple cells)
+  // Match lines like "Cell1| Cell2| Cell3" or "| Cell1 | Cell2 |"
+  if (trimmed.includes("|")) {
+    const pipeCount = (trimmed.match(/\|/g) || []).length;
+    if (pipeCount >= 1) {
+      // Check if it's a separator row (contains only -, :, |, and spaces)
+      if (/^[\s\-:|]+$/.test(trimmed)) {
+        const cells = trimmed.split("|").filter(c => c.trim());
+        return { type: "tableSeparator", content: trimmed, cells };
+      }
+      // Parse cells - split by | and filter empty
+      let cells = trimmed.split("|").map(cell => cell.trim());
+      // Remove empty first/last cells if line starts/ends with |
+      if (cells[0] === "") cells = cells.slice(1);
+      if (cells[cells.length - 1] === "") cells = cells.slice(0, -1);
+      if (cells.length >= 1) {
+        return { type: "table", content: trimmed, cells };
+      }
     }
-    // Parse cells
-    const cells = trimmed
-      .slice(1, -1) // Remove leading/trailing |
-      .split("|")
-      .map(cell => cell.trim());
-    return { type: "table", content: trimmed, cells };
   }
 
   return { type: "text", content: line };
@@ -195,24 +201,25 @@ function renderLine(parsed: ParsedLine, idx: number): React.ReactNode {
 
     case "table":
       return (
-        <Text key={idx}>
+        <Box key={idx} flexDirection="row">
           {parsed.cells?.map((cell, i) => (
             <Text key={i}>
-              <Text color="gray">│ </Text>
-              {renderInline(cell)}
-              {i === (parsed.cells?.length || 0) - 1 && <Text color="gray"> │</Text>}
+              <Text color="gray">│</Text>
+              <Text> {renderInline(cell)} </Text>
             </Text>
           ))}
-        </Text>
+          <Text color="gray">│</Text>
+        </Box>
       );
 
     case "tableSeparator":
       return (
-        <Text key={idx} color="gray">
+        <Box key={idx} flexDirection="row">
           {parsed.cells?.map((_, i) => (
-            <Text key={i}>├{"─".repeat(10)}</Text>
-          ))}┤
-        </Text>
+            <Text key={i} color="gray">├{"─".repeat(12)}</Text>
+          ))}
+          <Text color="gray">┤</Text>
+        </Box>
       );
 
     case "text":
