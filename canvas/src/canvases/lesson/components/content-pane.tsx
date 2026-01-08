@@ -1,6 +1,8 @@
 import React from "react";
 import { Box, Text } from "ink";
 import { LESSON_COLORS } from "../types";
+import { TypeScriptHighlighter } from "./typescript-highlighter";
+import { SimpleMarkdown } from "./simple-markdown";
 
 export type PaneType = "test" | "model" | "reasoning";
 
@@ -34,14 +36,30 @@ export function ContentPane({
 }: Props) {
   const lines = content.split("\n");
   const visibleLines = maxHeight - 2; // Account for header and border
-  const visibleContent = lines.slice(
-    scrollOffset,
-    scrollOffset + visibleLines
-  );
-
   const color = getPaneColor(type);
   const canScrollUp = scrollOffset > 0;
   const canScrollDown = scrollOffset + visibleLines < lines.length;
+
+  // Render content based on pane type
+  const renderContent = () => {
+    if (type === "reasoning") {
+      return (
+        <SimpleMarkdown
+          content={content}
+          scrollOffset={scrollOffset}
+          visibleLines={visibleLines}
+        />
+      );
+    }
+    // TEST and MODEL use TypeScript highlighting
+    return (
+      <TypeScriptHighlighter
+        content={content}
+        scrollOffset={scrollOffset}
+        visibleLines={visibleLines}
+      />
+    );
+  };
 
   return (
     <Box
@@ -64,11 +82,7 @@ export function ContentPane({
       </Box>
 
       <Box flexDirection="column" marginTop={1}>
-        {visibleContent.map((line, i) => (
-          <Text key={`${type}-line-${scrollOffset + i}`} color={LESSON_COLORS.dim} wrap="truncate">
-            {line || " "}
-          </Text>
-        ))}
+        {renderContent()}
       </Box>
 
       {(canScrollUp || canScrollDown) && (
