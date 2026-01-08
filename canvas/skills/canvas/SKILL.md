@@ -2,7 +2,7 @@
 name: canvas
 description: |
   **The primary skill for terminal TUI components.** Covers spawning, controlling, and interacting with terminal canvases.
-  Use when displaying calendars, documents, or flight bookings.
+  Use when displaying calendars, documents, flight bookings, or lesson content.
 ---
 
 # Canvas TUI Toolkit
@@ -25,6 +25,10 @@ Try asking Claude things like:
 - "Find flights from SFO to Denver next Friday"
 - "Book me a window seat on the morning flight"
 
+**Lesson:**
+- "Show me the lesson canvas for learn-safety-culture"
+- "Browse the concepts in my learning project"
+
 ## Overview
 
 Canvas provides interactive terminal displays (TUIs) that Claude can spawn and control. Each canvas type supports multiple scenarios for different interaction modes.
@@ -36,6 +40,7 @@ Canvas provides interactive terminal displays (TUIs) that Claude can spawn and c
 | `calendar` | Display calendars, pick meeting times | `display`, `meeting-picker` |
 | `document` | View/edit markdown documents | `display`, `edit`, `email-preview` |
 | `flight` | Flight comparison and seat selection | `booking` |
+| `lesson` | Browse learning content (tests, models, reasoning) | `display`, `interactive` |
 
 ## Quick Start
 
@@ -113,3 +118,4 @@ if (result.success && result.data) {
 | `calendar` | Calendar display and meeting picker details |
 | `document` | Document rendering and text selection |
 | `flight` | Flight comparison and seat map details |
+| `lesson` | Learning content browser for ralph-learning-engine projects |

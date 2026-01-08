@@ -6,6 +6,8 @@ import { meetingPickerScenario } from "./calendar/meeting-picker";
 import { documentDisplayScenario } from "./document/display";
 import { documentEditScenario } from "./document/edit";
 import { emailPreviewScenario } from "./document/email-preview";
+import { lessonDisplayScenario } from "./lesson/display";
+import { lessonInteractiveScenario } from "./lesson/interactive";
 
 // Registry of all scenarios keyed by "canvasKind:scenarioName"
 const registry = new Map<string, ScenarioDefinition>();
@@ -18,6 +20,10 @@ registry.set("calendar:meeting-picker", meetingPickerScenario);
 registry.set("document:display", documentDisplayScenario);
 registry.set("document:edit", documentEditScenario);
 registry.set("document:email-preview", emailPreviewScenario);
+
+// Register lesson scenarios
+registry.set("lesson:display", lessonDisplayScenario);
+registry.set("lesson:interactive", lessonInteractiveScenario);
 
 export function getScenario(
   canvasKind: string,
