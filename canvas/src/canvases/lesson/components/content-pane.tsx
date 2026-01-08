@@ -8,7 +8,9 @@ import { LESSON_COLORS } from "../types";
 
 // Configure marked with terminal renderer once
 // @ts-ignore - types package is outdated
-marked.use(markedTerminal());
+marked.use(markedTerminal({
+  showSectionPrefix: false,
+}));
 
 export type PaneType = "test" | "model" | "reasoning";
 
