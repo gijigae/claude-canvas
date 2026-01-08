@@ -1,6 +1,6 @@
 ---
 name: canvas
-description: Spawn interactive terminal canvases for calendars, documents, and flight booking
+description: Spawn interactive terminal canvases for calendars, documents, flight booking, and lessons
 ---
 
 # Canvas Command
@@ -20,6 +20,7 @@ Ask what kind of canvas the user needs:
 - **Calendar** - Display events or pick meeting times
 - **Document** - View or edit markdown content
 - **Flight** - Compare flights and select seats
+- **Lesson** - Browse learning content (tests, models, reasoning)
 
 ### Step 2: Gather Configuration
 
@@ -40,6 +41,11 @@ Based on the canvas type, collect the necessary configuration:
 - Flight options (airline, times, prices)
 - Seatmap configuration
 - Origin/destination airports
+
+**Lesson:**
+- Project path (ralph-learning-engine project root)
+- Optional title
+- Optional pre-selected concept ID
 
 ### Step 3: Spawn Canvas
 
@@ -64,6 +70,9 @@ bun run src/cli.ts spawn document --scenario edit --config '{"content": "# Title
 
 # Flight booking
 bun run src/cli.ts spawn flight --config '{"flights": [...]}'
+
+# Lesson browser
+bun run src/cli.ts spawn lesson --config '{"projectPath": "/path/to/learning-project"}'
 ```
 
 ### Step 4: Handle Results
@@ -87,3 +96,4 @@ Read these skills for detailed configuration options:
 - `calendar` - Calendar events and meeting picker
 - `document` - Markdown rendering and text selection
 - `flight` - Flight comparison and seatmaps
+- `lesson` - Learning content browser
