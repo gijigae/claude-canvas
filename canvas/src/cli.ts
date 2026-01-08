@@ -56,6 +56,8 @@ program
     const env = detectTerminal();
     console.log("Terminal Environment:");
     console.log(`  In tmux: ${env.inTmux}`);
+    console.log(`  In zellij: ${env.inZellij}`);
+    console.log(`  Active multiplexer: ${env.multiplexer}`);
     console.log(`\nSummary: ${env.summary}`);
   });
 
