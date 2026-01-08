@@ -66,13 +66,8 @@ export function ContentPane({
       // Split rendered markdown into lines and show visible portion
       const mdLines = renderedMarkdown.split("\n");
       const visibleMdLines = mdLines.slice(scrollOffset, scrollOffset + visibleLines);
-      return (
-        <Box flexDirection="column">
-          {visibleMdLines.map((line, i) => (
-            <Text key={i}>{line || " "}</Text>
-          ))}
-        </Box>
-      );
+      // Join back and render as single Text to preserve ANSI codes properly
+      return <Text>{visibleMdLines.join("\n") || " "}</Text>;
     }
     // TEST and MODEL use TypeScript highlighting
     const visibleContent = lines
