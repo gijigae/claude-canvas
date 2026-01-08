@@ -1,6 +1,16 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Text } from "ink";
+import SyntaxHighlight from "ink-syntax-highlight";
+import { marked } from "marked";
+// @ts-ignore - types don't match latest version
+import { markedTerminal } from "marked-terminal";
 import { LESSON_COLORS } from "../types";
+
+// Configure marked with terminal renderer once
+// @ts-ignore - types package is outdated
+marked.use(markedTerminal({
+  showSectionPrefix: false,
+}));
 
 export type PaneType = "test" | "model" | "reasoning";
 
@@ -34,14 +44,37 @@ export function ContentPane({
 }: Props) {
   const lines = content.split("\n");
   const visibleLines = maxHeight - 2; // Account for header and border
-  const visibleContent = lines.slice(
-    scrollOffset,
-    scrollOffset + visibleLines
-  );
-
   const color = getPaneColor(type);
   const canScrollUp = scrollOffset > 0;
   const canScrollDown = scrollOffset + visibleLines < lines.length;
+
+  // Render markdown content with marked-terminal
+  const renderedMarkdown = useMemo(() => {
+    if (type !== "reasoning") return null;
+    let result = marked.parse(content) as string;
+    // Post-process: marked-terminal doesn't render bold/italic in lists
+    // Convert **text** to bold ANSI
+    result = result.replace(/\*\*([^*]+)\*\*/g, "\x1b[1m$1\x1b[22m");
+    // Convert *text* to italic ANSI - must be preceded by space to avoid list bullets
+    result = result.replace(/ \*([^*\s][^*]*)\*/g, " \x1b[3m$1\x1b[23m");
+    return result;
+  }, [content, type]);
+
+  // Render content based on pane type
+  const renderContent = () => {
+    if (type === "reasoning" && renderedMarkdown) {
+      // Split rendered markdown into lines and show visible portion
+      const mdLines = renderedMarkdown.split("\n");
+      const visibleMdLines = mdLines.slice(scrollOffset, scrollOffset + visibleLines);
+      // Join back and render as single Text to preserve ANSI codes properly
+      return <Text>{visibleMdLines.join("\n") || " "}</Text>;
+    }
+    // TEST and MODEL use TypeScript highlighting
+    const visibleContent = lines
+      .slice(scrollOffset, scrollOffset + visibleLines)
+      .join("\n");
+    return <SyntaxHighlight code={visibleContent} language="typescript" />;
+  };
 
   return (
     <Box
@@ -64,11 +97,7 @@ export function ContentPane({
       </Box>
 
       <Box flexDirection="column" marginTop={1}>
-        {visibleContent.map((line, i) => (
-          <Text key={`${type}-line-${scrollOffset + i}`} color={LESSON_COLORS.dim} wrap="truncate">
-            {line || " "}
-          </Text>
-        ))}
+        {renderContent()}
       </Box>
 
       {(canScrollUp || canScrollDown) && (
