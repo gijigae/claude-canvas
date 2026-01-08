@@ -53,9 +53,10 @@ export function ContentPane({
     if (type !== "reasoning") return null;
     let result = marked.parse(content) as string;
     // Post-process: marked-terminal doesn't render bold/italic in lists
-    // Convert **text** to bold ANSI and *text* to italic ANSI
+    // Convert **text** to bold ANSI
     result = result.replace(/\*\*([^*]+)\*\*/g, "\x1b[1m$1\x1b[22m");
-    result = result.replace(/\*([^*]+)\*/g, "\x1b[3m$1\x1b[23m");
+    // Convert *text* to italic ANSI - must be preceded by space to avoid list bullets
+    result = result.replace(/ \*([^*\s][^*]*)\*/g, " \x1b[3m$1\x1b[23m");
     return result;
   }, [content, type]);
 
