@@ -118,28 +118,28 @@ function renderLine(parsed: ParsedLine, idx: number): React.ReactNode {
     case "h1":
       return (
         <Text key={idx} bold color="magenta">
-          # {parsed.content}
+          {parsed.content}
         </Text>
       );
 
     case "h2":
       return (
         <Text key={idx} bold color="yellow">
-          ## {parsed.content}
+          {parsed.content}
         </Text>
       );
 
     case "h3":
       return (
         <Text key={idx} bold color="cyan">
-          ### {parsed.content}
+          {parsed.content}
         </Text>
       );
 
     case "h4":
       return (
         <Text key={idx} bold color="green">
-          #### {parsed.content}
+          {parsed.content}
         </Text>
       );
 
@@ -172,8 +172,8 @@ function renderLine(parsed: ParsedLine, idx: number): React.ReactNode {
 
     case "code":
       return (
-        <Text key={idx} color="gray" dimColor>
-          {parsed.content ? `\`\`\`${parsed.content}` : "```"}
+        <Text key={idx} color="green" dimColor>
+          {parsed.content}
         </Text>
       );
 
