@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
+import SyntaxHighlight from "ink-syntax-highlight";
 import { LESSON_COLORS } from "../types";
-import { TypeScriptHighlighter } from "./typescript-highlighter";
 import { SimpleMarkdown } from "./simple-markdown";
 
 export type PaneType = "test" | "model" | "reasoning";
@@ -52,13 +52,11 @@ export function ContentPane({
       );
     }
     // TEST and MODEL use TypeScript highlighting
-    return (
-      <TypeScriptHighlighter
-        content={content}
-        scrollOffset={scrollOffset}
-        visibleLines={visibleLines}
-      />
-    );
+    // Slice content to visible lines for scrolling
+    const visibleContent = lines
+      .slice(scrollOffset, scrollOffset + visibleLines)
+      .join("\n");
+    return <SyntaxHighlight code={visibleContent} language="typescript" />;
   };
 
   return (
