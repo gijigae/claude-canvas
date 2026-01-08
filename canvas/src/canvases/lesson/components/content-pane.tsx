@@ -51,7 +51,12 @@ export function ContentPane({
   // Render markdown content with marked-terminal
   const renderedMarkdown = useMemo(() => {
     if (type !== "reasoning") return null;
-    return marked.parse(content) as string;
+    let result = marked.parse(content) as string;
+    // Post-process: marked-terminal doesn't render bold/italic in lists
+    // Convert **text** to bold ANSI and *text* to italic ANSI
+    result = result.replace(/\*\*([^*]+)\*\*/g, "\x1b[1m$1\x1b[22m");
+    result = result.replace(/\*([^*]+)\*/g, "\x1b[3m$1\x1b[23m");
+    return result;
   }, [content, type]);
 
   // Render content based on pane type
