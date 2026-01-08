@@ -9,12 +9,13 @@ interface Props {
   visibleLines: number;
 }
 
-type LineType = "h1" | "h2" | "h3" | "h4" | "bullet" | "numbered" | "code" | "blockquote" | "hr" | "text" | "blank";
+type LineType = "h1" | "h2" | "h3" | "h4" | "bullet" | "numbered" | "code" | "blockquote" | "hr" | "table" | "tableSeparator" | "text" | "blank";
 
 interface ParsedLine {
   type: LineType;
   content: string;
   prefix?: string;
+  cells?: string[];
 }
 
 function parseLine(line: string): ParsedLine {
@@ -62,6 +63,21 @@ function parseLine(line: string): ParsedLine {
   // Code block markers (we'll handle inline)
   if (trimmed.startsWith("```")) {
     return { type: "code", content: trimmed.slice(3) };
+  }
+
+  // Table row (starts and ends with |)
+  if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+    // Check if it's a separator row (|---|---|)
+    if (/^\|[\s\-:]+\|$/.test(trimmed.replace(/\|/g, "|"))) {
+      const cellCount = (trimmed.match(/\|/g) || []).length - 1;
+      return { type: "tableSeparator", content: trimmed, cells: Array(cellCount).fill("---") };
+    }
+    // Parse cells
+    const cells = trimmed
+      .slice(1, -1) // Remove leading/trailing |
+      .split("|")
+      .map(cell => cell.trim());
+    return { type: "table", content: trimmed, cells };
   }
 
   return { type: "text", content: line };
@@ -174,6 +190,28 @@ function renderLine(parsed: ParsedLine, idx: number): React.ReactNode {
       return (
         <Text key={idx} color="green" dimColor>
           {parsed.content}
+        </Text>
+      );
+
+    case "table":
+      return (
+        <Text key={idx}>
+          {parsed.cells?.map((cell, i) => (
+            <Text key={i}>
+              <Text color="gray">│ </Text>
+              {renderInline(cell)}
+              {i === (parsed.cells?.length || 0) - 1 && <Text color="gray"> │</Text>}
+            </Text>
+          ))}
+        </Text>
+      );
+
+    case "tableSeparator":
+      return (
+        <Text key={idx} color="gray">
+          {parsed.cells?.map((_, i) => (
+            <Text key={i}>├{"─".repeat(10)}</Text>
+          ))}┤
         </Text>
       );
 
