@@ -18,7 +18,8 @@ interface Props {
   scenario?: string;
 }
 
-type FocusedPane = "list" | "test" | "model" | "reasoning";
+type FocusArea = "list" | "content";
+type ContentTab = "test" | "model" | "reasoning";
 
 export function LessonCanvas({
   id,
@@ -39,7 +40,8 @@ export function LessonCanvas({
   const [config, setConfig] = useState<LessonConfig | undefined>(initialConfig);
 
   // UI state
-  const [focusedPane, setFocusedPane] = useState<FocusedPane>("list");
+  const [focusArea, setFocusArea] = useState<FocusArea>("list");
+  const [activeTab, setActiveTab] = useState<ContentTab>("test");
   const [scrollOffsets, setScrollOffsets] = useState({
     test: 0,
     model: 0,
@@ -115,27 +117,31 @@ export function LessonCanvas({
     [conceptStatuses]
   );
 
-  // Cycle focus between panes
-  const cycleFocus = useCallback(() => {
-    const order: FocusedPane[] = ["list", "test", "model", "reasoning"];
-    const currentIndex = order.indexOf(focusedPane);
-    setFocusedPane(order[(currentIndex + 1) % order.length]);
-  }, [focusedPane]);
+  // Toggle focus between list and content
+  const toggleFocus = useCallback(() => {
+    setFocusArea((prev) => (prev === "list" ? "content" : "list"));
+  }, []);
+
+  // Cycle through tabs
+  const cycleTab = useCallback(() => {
+    const order: ContentTab[] = ["test", "model", "reasoning"];
+    const currentIndex = order.indexOf(activeTab);
+    setActiveTab(order[(currentIndex + 1) % order.length]!);
+  }, [activeTab]);
 
   // Handle scrolling in content panes
   const scroll = useCallback(
     (direction: "up" | "down") => {
-      if (focusedPane === "list") return;
+      if (focusArea === "list") return;
 
-      const key = focusedPane as "test" | "model" | "reasoning";
       const delta = direction === "up" ? -3 : 3;
 
       setScrollOffsets((prev) => ({
         ...prev,
-        [key]: Math.max(0, prev[key] + delta),
+        [activeTab]: Math.max(0, prev[activeTab] + delta),
       }));
     },
-    [focusedPane]
+    [focusArea, activeTab]
   );
 
   // Keyboard controls
@@ -168,9 +174,33 @@ export function LessonCanvas({
       return;
     }
 
-    // Tab to cycle focus
+    // Tab to toggle focus between list and content
     if (key.tab) {
-      cycleFocus();
+      toggleFocus();
+      return;
+    }
+
+    // 1/2/3 or h/l to switch tabs
+    if (input === "1") {
+      setActiveTab("test");
+      return;
+    }
+    if (input === "2") {
+      setActiveTab("model");
+      return;
+    }
+    if (input === "3") {
+      setActiveTab("reasoning");
+      return;
+    }
+    if (input === "h" || key.leftArrow) {
+      const order: ContentTab[] = ["test", "model", "reasoning"];
+      const idx = order.indexOf(activeTab);
+      setActiveTab(order[(idx - 1 + order.length) % order.length]!);
+      return;
+    }
+    if (input === "l" || key.rightArrow) {
+      cycleTab();
       return;
     }
 
@@ -181,7 +211,7 @@ export function LessonCanvas({
     }
 
     // Navigation
-    if (focusedPane === "list") {
+    if (focusArea === "list") {
       if (input === "j" || key.downArrow) {
         setSelectedIndex(Math.min(concepts.length - 1, selectedIndex + 1));
         // Reset scroll offsets when changing concept
@@ -204,12 +234,12 @@ export function LessonCanvas({
   const termWidth = dimensions.width;
   const termHeight = dimensions.height;
   const headerHeight = 2;
+  const tabBarHeight = 1;
   const statusBarHeight = 3;
-  const contentHeight = termHeight - headerHeight - statusBarHeight;
+  const contentHeight = termHeight - headerHeight - tabBarHeight - statusBarHeight;
 
   const leftPanelWidth = Math.max(20, Math.floor(termWidth * 0.2));
   const rightPanelWidth = termWidth - leftPanelWidth - 2;
-  const paneHeight = Math.floor((contentHeight - 2) / 3);
 
   // Loading state
   if (loading) {
@@ -293,6 +323,21 @@ export function LessonCanvas({
     );
   }
 
+  // Get current tab content and title
+  const getTabContent = () => {
+    if (!currentConcept) return { title: "No concept selected", content: "" };
+    switch (activeTab) {
+      case "test":
+        return { title: basename(currentConcept.testPath), content: currentConcept.testContent || "" };
+      case "model":
+        return { title: basename(currentConcept.modelPath), content: currentConcept.modelContent || "" };
+      case "reasoning":
+        return { title: basename(currentConcept.reasoningPath), content: currentConcept.reasoningContent || "" };
+    }
+  };
+
+  const tabContent = getTabContent();
+
   return (
     <Box flexDirection="column" width={termWidth} height={termHeight}>
       {/* Header */}
@@ -310,64 +355,50 @@ export function LessonCanvas({
       </Box>
 
       {/* Main content */}
-      <Box flexDirection="row" height={contentHeight}>
+      <Box flexDirection="row" height={contentHeight + tabBarHeight}>
         {/* Left panel - Concept list */}
         <Box
           flexDirection="column"
           width={leftPanelWidth}
           borderStyle="single"
           borderColor={
-            focusedPane === "list" ? LESSON_COLORS.header : LESSON_COLORS.dim
+            focusArea === "list" ? LESSON_COLORS.header : LESSON_COLORS.dim
           }
           paddingX={1}
         >
           <ConceptList
             concepts={conceptsWithStatus}
             selectedIndex={selectedIndex}
-            focused={focusedPane === "list"}
-            maxHeight={contentHeight - 2}
+            focused={focusArea === "list"}
+            maxHeight={contentHeight + tabBarHeight - 2}
           />
         </Box>
 
-        {/* Right panel - Content panes */}
+        {/* Right panel - Tab bar + Content pane */}
         <Box flexDirection="column" width={rightPanelWidth}>
-          <ContentPane
-            type="test"
-            title={
-              currentConcept
-                ? basename(currentConcept.testPath)
-                : "No concept selected"
-            }
-            content={currentConcept?.testContent || ""}
-            focused={focusedPane === "test"}
-            scrollOffset={scrollOffsets.test}
-            maxHeight={paneHeight}
-          />
+          {/* Tab bar */}
+          <Box paddingX={1} gap={2}>
+            {(["test", "model", "reasoning"] as const).map((tab, idx) => (
+              <Text
+                key={tab}
+                bold={activeTab === tab}
+                color={activeTab === tab ? (tab === "test" ? "cyan" : tab === "model" ? "yellow" : "green") : LESSON_COLORS.dim}
+                inverse={activeTab === tab}
+              >
+                {" "}{idx + 1}:{tab.toUpperCase()}{" "}
+              </Text>
+            ))}
+            <Text color={LESSON_COLORS.dim}> (h/l or 1/2/3)</Text>
+          </Box>
 
+          {/* Single content pane */}
           <ContentPane
-            type="model"
-            title={
-              currentConcept
-                ? basename(currentConcept.modelPath)
-                : "No concept selected"
-            }
-            content={currentConcept?.modelContent || ""}
-            focused={focusedPane === "model"}
-            scrollOffset={scrollOffsets.model}
-            maxHeight={paneHeight}
-          />
-
-          <ContentPane
-            type="reasoning"
-            title={
-              currentConcept
-                ? basename(currentConcept.reasoningPath)
-                : "No concept selected"
-            }
-            content={currentConcept?.reasoningContent || ""}
-            focused={focusedPane === "reasoning"}
-            scrollOffset={scrollOffsets.reasoning}
-            maxHeight={paneHeight}
+            type={activeTab}
+            title={tabContent.title}
+            content={tabContent.content}
+            focused={focusArea === "content"}
+            scrollOffset={scrollOffsets[activeTab]}
+            maxHeight={contentHeight}
           />
         </Box>
       </Box>
@@ -376,7 +407,7 @@ export function LessonCanvas({
       <StatusBar
         concept={currentConcept}
         testRunning={running}
-        focusedPane={focusedPane}
+        focusedPane={focusArea === "list" ? "list" : activeTab}
       />
     </Box>
   );
